@@ -5,16 +5,16 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./libs/IBEP20.sol";
 import "./libs/SafeBEP20.sol";
-import "./libs/IPantherReferral.sol";
+import "./libs/IRisiReferral.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-import "./PantherToken.sol";
+import "./RisiToken.sol";
 
-// MasterChef is the master of Panther. He can make Panther and he is a fair guy.
+// MasterChef is the master of Risi. He can make Risi and he is a fair guy.
 //
 // Note that it's ownable and the owner wields tremendous power. The ownership
-// will be transferred to a governance smart contract once PANTHER is sufficiently
+// will be transferred to a governance smart contract once RISI is sufficiently
 // distributed and the community can show to govern itself.
 //
 // Have fun reading it. Hopefully it's bug-free. God bless.
@@ -29,13 +29,13 @@ contract MasterChef is Ownable, ReentrancyGuard {
         uint256 rewardLockedUp;  // Reward locked up.
         uint256 nextHarvestUntil; // When can the user harvest again.
         //
-        // We do some fancy math here. Basically, any point in time, the amount of PANTHERs
+        // We do some fancy math here. Basically, any point in time, the amount of RISIs
         // entitled to a user but is pending to be distributed is:
         //
-        //   pending reward = (user.amount * pool.accPantherPerShare) - user.rewardDebt
+        //   pending reward = (user.amount * pool.accRisiPerShare) - user.rewardDebt
         //
         // Whenever a user deposits or withdraws LP tokens to a pool. Here's what happens:
-        //   1. The pool's `accPantherPerShare` (and `lastRewardBlock`) gets updated.
+        //   1. The pool's `accRisiPerShare` (and `lastRewardBlock`) gets updated.
         //   2. User receives the pending reward sent to his/her address.
         //   3. User's `amount` gets updated.
         //   4. User's `rewardDebt` gets updated.
@@ -44,22 +44,22 @@ contract MasterChef is Ownable, ReentrancyGuard {
     // Info of each pool.
     struct PoolInfo {
         IBEP20 lpToken;           // Address of LP token contract.
-        uint256 allocPoint;       // How many allocation points assigned to this pool. PANTHERs to distribute per block.
-        uint256 lastRewardBlock;  // Last block number that PANTHERs distribution occurs.
-        uint256 accPantherPerShare;   // Accumulated PANTHERs per share, times 1e12. See below.
+        uint256 allocPoint;       // How many allocation points assigned to this pool. RISIs to distribute per block.
+        uint256 lastRewardBlock;  // Last block number that RISIs distribution occurs.
+        uint256 accRisiPerShare;   // Accumulated RISIs per share, times 1e12. See below.
         uint16 depositFeeBP;      // Deposit fee in basis points
         uint256 harvestInterval;  // Harvest interval in seconds
     }
 
-    // The PANTHER TOKEN!
-    PantherToken public panther;
+    // The RISI TOKEN!
+    RisiToken public risi;
     // Dev address.
     address public devAddress;
     // Deposit Fee address
     address public feeAddress;
-    // PANTHER tokens created per block.
-    uint256 public pantherPerBlock;
-    // Bonus muliplier for early panther makers.
+    // RISI tokens created per block.
+    uint256 public risiPerBlock;
+    // Bonus muliplier for early risi makers.
     uint256 public constant BONUS_MULTIPLIER = 1;
     // Max harvest interval: 14 days.
     uint256 public constant MAXIMUM_HARVEST_INTERVAL = 14 days;
@@ -70,13 +70,13 @@ contract MasterChef is Ownable, ReentrancyGuard {
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
     // Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint = 0;
-    // The block number when PANTHER mining starts.
+    // The block number when RISI mining starts.
     uint256 public startBlock;
     // Total locked up rewards
     uint256 public totalLockedUpRewards;
 
-    // Panther referral contract address.
-    IPantherReferral public pantherReferral;
+    // Risi referral contract address.
+    IRisiReferral public risiReferral;
     // Referral commission rate in basis points.
     uint16 public referralCommissionRate = 100;
     // Max referral commission rate: 10%.
@@ -90,13 +90,13 @@ contract MasterChef is Ownable, ReentrancyGuard {
     event RewardLockedUp(address indexed user, uint256 indexed pid, uint256 amountLockedUp);
 
     constructor(
-        PantherToken _panther,
+        RisiToken _risi,
         uint256 _startBlock,
-        uint256 _pantherPerBlock
+        uint256 _risiPerBlock
     ) public {
-        panther = _panther;
+        risi = _risi;
         startBlock = _startBlock;
-        pantherPerBlock = _pantherPerBlock;
+        risiPerBlock = _risiPerBlock;
 
         devAddress = msg.sender;
         feeAddress = msg.sender;
@@ -120,13 +120,13 @@ contract MasterChef is Ownable, ReentrancyGuard {
             lpToken: _lpToken,
             allocPoint: _allocPoint,
             lastRewardBlock: lastRewardBlock,
-            accPantherPerShare: 0,
+            accRisiPerShare: 0,
             depositFeeBP: _depositFeeBP,
             harvestInterval: _harvestInterval
         }));
     }
 
-    // Update the given pool's PANTHER allocation point and deposit fee. Can only be called by the owner.
+    // Update the given pool's RISI allocation point and deposit fee. Can only be called by the owner.
     function set(uint256 _pid, uint256 _allocPoint, uint16 _depositFeeBP, uint256 _harvestInterval, bool _withUpdate) public onlyOwner {
         require(_depositFeeBP <= 10000, "set: invalid deposit fee basis points");
         require(_harvestInterval <= MAXIMUM_HARVEST_INTERVAL, "set: invalid harvest interval");
@@ -144,22 +144,22 @@ contract MasterChef is Ownable, ReentrancyGuard {
         return _to.sub(_from).mul(BONUS_MULTIPLIER);
     }
 
-    // View function to see pending PANTHERs on frontend.
-    function pendingPanther(uint256 _pid, address _user) external view returns (uint256) {
+    // View function to see pending RISIs on frontend.
+    function pendingRisi(uint256 _pid, address _user) external view returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
-        uint256 accPantherPerShare = pool.accPantherPerShare;
+        uint256 accRisiPerShare = pool.accRisiPerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-            uint256 pantherReward = multiplier.mul(pantherPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-            accPantherPerShare = accPantherPerShare.add(pantherReward.mul(1e12).div(lpSupply));
+            uint256 risiReward = multiplier.mul(risiPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
+            accRisiPerShare = accRisiPerShare.add(risiReward.mul(1e12).div(lpSupply));
         }
-        uint256 pending = user.amount.mul(accPantherPerShare).div(1e12).sub(user.rewardDebt);
+        uint256 pending = user.amount.mul(accRisiPerShare).div(1e12).sub(user.rewardDebt);
         return pending.add(user.rewardLockedUp);
     }
 
-    // View function to see if user can harvest PANTHERs.
+    // View function to see if user can harvest RISIs.
     function canHarvest(uint256 _pid, address _user) public view returns (bool) {
         UserInfo storage user = userInfo[_pid][_user];
         return block.timestamp >= user.nextHarvestUntil;
@@ -185,26 +185,26 @@ contract MasterChef is Ownable, ReentrancyGuard {
             return;
         }
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-        uint256 pantherReward = multiplier.mul(pantherPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-        panther.mint(devAddress, pantherReward.div(10));
-        panther.mint(address(this), pantherReward);
-        pool.accPantherPerShare = pool.accPantherPerShare.add(pantherReward.mul(1e12).div(lpSupply));
+        uint256 risiReward = multiplier.mul(risiPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
+        risi.mint(devAddress, risiReward.div(10));
+        risi.mint(address(this), risiReward);
+        pool.accRisiPerShare = pool.accRisiPerShare.add(risiReward.mul(1e12).div(lpSupply));
         pool.lastRewardBlock = block.number;
     }
 
-    // Deposit LP tokens to MasterChef for PANTHER allocation.
+    // Deposit LP tokens to MasterChef for RISI allocation.
     function deposit(uint256 _pid, uint256 _amount, address _referrer) public nonReentrant {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
-        if (_amount > 0 && address(pantherReferral) != address(0) && _referrer != address(0) && _referrer != msg.sender) {
-            pantherReferral.recordReferral(msg.sender, _referrer);
+        if (_amount > 0 && address(risiReferral) != address(0) && _referrer != address(0) && _referrer != msg.sender) {
+            risiReferral.recordReferral(msg.sender, _referrer);
         }
-        payOrLockupPendingPanther(_pid);
+        payOrLockupPendingRisi(_pid);
         if (_amount > 0) {
             pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
-            if (address(pool.lpToken) == address(panther)) {
-                uint256 transferTax = _amount.mul(panther.transferTaxRate()).div(10000);
+            if (address(pool.lpToken) == address(risi)) {
+                uint256 transferTax = _amount.mul(risi.transferTaxRate()).div(10000);
                 _amount = _amount.sub(transferTax);
             }
             if (pool.depositFeeBP > 0) {
@@ -215,7 +215,7 @@ contract MasterChef is Ownable, ReentrancyGuard {
                 user.amount = user.amount.add(_amount);
             }
         }
-        user.rewardDebt = user.amount.mul(pool.accPantherPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accRisiPerShare).div(1e12);
         emit Deposit(msg.sender, _pid, _amount);
     }
 
@@ -225,12 +225,12 @@ contract MasterChef is Ownable, ReentrancyGuard {
         UserInfo storage user = userInfo[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(_pid);
-        payOrLockupPendingPanther(_pid);
+        payOrLockupPendingRisi(_pid);
         if (_amount > 0) {
             user.amount = user.amount.sub(_amount);
             pool.lpToken.safeTransfer(address(msg.sender), _amount);
         }
-        user.rewardDebt = user.amount.mul(pool.accPantherPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accRisiPerShare).div(1e12);
         emit Withdraw(msg.sender, _pid, _amount);
     }
 
@@ -247,8 +247,8 @@ contract MasterChef is Ownable, ReentrancyGuard {
         emit EmergencyWithdraw(msg.sender, _pid, amount);
     }
 
-    // Pay or lockup pending PANTHERs.
-    function payOrLockupPendingPanther(uint256 _pid) internal {
+    // Pay or lockup pending RISIs.
+    function payOrLockupPendingRisi(uint256 _pid) internal {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
 
@@ -256,7 +256,7 @@ contract MasterChef is Ownable, ReentrancyGuard {
             user.nextHarvestUntil = block.timestamp.add(pool.harvestInterval);
         }
 
-        uint256 pending = user.amount.mul(pool.accPantherPerShare).div(1e12).sub(user.rewardDebt);
+        uint256 pending = user.amount.mul(pool.accRisiPerShare).div(1e12).sub(user.rewardDebt);
         if (canHarvest(_pid, msg.sender)) {
             if (pending > 0 || user.rewardLockedUp > 0) {
                 uint256 totalRewards = pending.add(user.rewardLockedUp);
@@ -267,7 +267,7 @@ contract MasterChef is Ownable, ReentrancyGuard {
                 user.nextHarvestUntil = block.timestamp.add(pool.harvestInterval);
 
                 // send rewards
-                safePantherTransfer(msg.sender, totalRewards);
+                safeRisiTransfer(msg.sender, totalRewards);
                 payReferralCommission(msg.sender, totalRewards);
             }
         } else if (pending > 0) {
@@ -277,13 +277,13 @@ contract MasterChef is Ownable, ReentrancyGuard {
         }
     }
 
-    // Safe panther transfer function, just in case if rounding error causes pool to not have enough PANTHERs.
-    function safePantherTransfer(address _to, uint256 _amount) internal {
-        uint256 pantherBal = panther.balanceOf(address(this));
-        if (_amount > pantherBal) {
-            panther.transfer(_to, pantherBal);
+    // Safe risi transfer function, just in case if rounding error causes pool to not have enough RISIs.
+    function safeRisiTransfer(address _to, uint256 _amount) internal {
+        uint256 risiBal = risi.balanceOf(address(this));
+        if (_amount > risiBal) {
+            risi.transfer(_to, risiBal);
         } else {
-            panther.transfer(_to, _amount);
+            risi.transfer(_to, _amount);
         }
     }
 
@@ -301,15 +301,15 @@ contract MasterChef is Ownable, ReentrancyGuard {
     }
 
     // Pancake has to add hidden dummy pools in order to alter the emission, here we make it simple and transparent to all.
-    function updateEmissionRate(uint256 _pantherPerBlock) public onlyOwner {
+    function updateEmissionRate(uint256 _risiPerBlock) public onlyOwner {
         massUpdatePools();
-        emit EmissionRateUpdated(msg.sender, pantherPerBlock, _pantherPerBlock);
-        pantherPerBlock = _pantherPerBlock;
+        emit EmissionRateUpdated(msg.sender, risiPerBlock, _risiPerBlock);
+        risiPerBlock = _risiPerBlock;
     }
 
-    // Update the panther referral contract address by the owner
-    function setPantherReferral(IPantherReferral _pantherReferral) public onlyOwner {
-        pantherReferral = _pantherReferral;
+    // Update the risi referral contract address by the owner
+    function setRisiReferral(IRisiReferral _risiReferral) public onlyOwner {
+        risiReferral = _risiReferral;
     }
 
     // Update referral commission rate by the owner
@@ -320,13 +320,13 @@ contract MasterChef is Ownable, ReentrancyGuard {
 
     // Pay referral commission to the referrer who referred this user.
     function payReferralCommission(address _user, uint256 _pending) internal {
-        if (address(pantherReferral) != address(0) && referralCommissionRate > 0) {
-            address referrer = pantherReferral.getReferrer(_user);
+        if (address(risiReferral) != address(0) && referralCommissionRate > 0) {
+            address referrer = risiReferral.getReferrer(_user);
             uint256 commissionAmount = _pending.mul(referralCommissionRate).div(10000);
 
             if (referrer != address(0) && commissionAmount > 0) {
-                panther.mint(referrer, commissionAmount);
-                pantherReferral.recordReferralCommission(referrer, commissionAmount);
+                risi.mint(referrer, commissionAmount);
+                risiReferral.recordReferralCommission(referrer, commissionAmount);
                 emit ReferralCommissionPaid(_user, referrer, commissionAmount);
             }
         }

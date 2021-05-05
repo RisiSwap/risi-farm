@@ -3,6 +3,7 @@
 .idea/
 
 node_modules
+.secret
 
 #Buidler files
 cache

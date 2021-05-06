@@ -30,6 +30,13 @@ rajouter le reseau Ganache (defaut : HTTP://127.0.0.1:7545  id: 1337)
 
 Ajouter un nouveau compte
 En cliquant sur l'avatar du compte dans metamask -> Importer un compte -> copié collé la clefs privée de la seconde ligne ganache
+## local deploy
+truffle migrate --reset
+
+## Testnet deploy
+truffle migrate --network testnet --reset
+- RisiToken: [0x3D85eE7f96f7959E591212a9b742e386e811B076](https://testnet.bscscan.com/address/0x3D85eE7f96f7959E591212a9b742e386e811B076)
+- MasterChef: [0x67e3E4e43b774853CcEC912ecC60257a9D6475B8](https://testnet.bscscan.com/address/0x67e3e4e43b774853ccec912ecc60257a9d6475b8)
 
 ## Prod deploy
 
@@ -49,5 +56,3 @@ MasterChef owner : Timelock -> appeler les function owner via execute Transactio
 
 - RisiToken: [0x1f546ad641b56b86fd9dceac473d1c7a357276b7](https://bscscan.com/address/0x1f546ad641b56b86fd9dceac473d1c7a357276b7)
 - MasterChef: [0x058451c62b96c594ad984370eda8b6fd7197bbd4](https://bscscan.com/address/0x058451c62b96c594ad984370eda8b6fd7197bbd4)
-- RisiReferral: [0xbb688307a13e5abbd99ee4d6229272a17d60fe34](https://bscscan.com/address/0xbb688307a13e5abbd99ee4d6229272a17d60fe34)
-- Timelock: [0xe6a8f0269d6af307a908ecd3938f470db7a56daa](https://bscscan.com/address/0xe6a8f0269d6af307a908ecd3938f470db7a56daa)

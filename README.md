@@ -35,8 +35,8 @@ truffle migrate --reset
 
 ## Testnet deploy
 truffle migrate --network testnet --reset
-- RisiToken: [0xcEFc45da5CD0c299b9f9d451971961c0f4EDb098](https://testnet.bscscan.com/address/0xcEFc45da5CD0c299b9f9d451971961c0f4EDb098)
-- MasterChef: [0xF6bF14526D29C1036Cd86f5dfb1a0A55367beb7C](https://testnet.bscscan.com/address/0xF6bF14526D29C1036Cd86f5dfb1a0A55367beb7C)
+- RisiToken: [0xB4e50995f531913a1593241eF6D730Ca5A071aba](https://testnet.bscscan.com/address/0xB4e50995f531913a1593241eF6D730Ca5A071aba)
+- MasterChef: [0x849EB9248920672501d2F389e4cA2b6b2711BC11](https://testnet.bscscan.com/address/0x849EB9248920672501d2F389e4cA2b6b2711BC11)
 
 ## Prod deploy
 

@@ -181,6 +181,45 @@ contract MasterChef is Ownable, ReentrancyGuard {
         pool.lastRewardBlock = block.number;
     }
 
+    // Stake RISI tokens to MasterChef
+    function enterStaking(uint256 _amount) public {
+        PoolInfo storage pool = poolInfo[0];
+        UserInfo storage user = userInfo[0][msg.sender];
+        updatePool(0);
+        if (user.amount > 0) {
+            uint256 pending = user.amount.mul(pool.accRisiPerShare).div(1e12).sub(user.rewardDebt);
+            if(pending > 0) {
+                safeRisiTransfer(msg.sender, pending);
+            }
+        }
+        if(_amount > 0) {
+            pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
+            user.amount = user.amount.add(_amount);
+        }
+        user.rewardDebt = user.amount.mul(pool.accRisiPerShare).div(1e12);
+
+        risi.mint(msg.sender, _amount);
+        emit Deposit(msg.sender, 0, _amount);
+    }
+
+    // Withdraw RISI tokens from STAKING.
+    function leaveStaking(uint256 _amount) public {
+        PoolInfo storage pool = poolInfo[0];
+        UserInfo storage user = userInfo[0][msg.sender];
+        require(user.amount >= _amount, "withdraw: not good");
+        updatePool(0);
+        uint256 pending = user.amount.mul(pool.accRisiPerShare).div(1e12).sub(user.rewardDebt);
+        if(pending > 0) {
+            safeRisiTransfer(msg.sender, pending);
+        }
+        if(_amount > 0) {
+            user.amount = user.amount.sub(_amount);
+            pool.lpToken.safeTransfer(address(msg.sender), _amount);
+        }
+        user.rewardDebt = user.amount.mul(pool.accRisiPerShare).div(1e12);
+        emit Withdraw(msg.sender, 0, _amount);
+    }
+
     // Deposit LP tokens to MasterChef for RISI allocation.
     function deposit(uint256 _pid, uint256 _amount) public nonReentrant {
         PoolInfo storage pool = poolInfo[_pid];

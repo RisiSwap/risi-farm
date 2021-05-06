@@ -41,7 +41,6 @@ contract RisiToken is BEP20 {
         _moveDelegates(address(0), _delegates[_to], _amount);
     }
 
-
     receive() external payable {}
 
     /**

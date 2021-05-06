@@ -10157,7 +10157,7 @@
   "resolved" "https://registry.npmjs.org/trim-right/-/trim-right-1.0.1.tgz"
   "version" "1.0.1"
 
-"truffle-flattener@^1.4.4":
+"truffle-flattener@^1.5.0":
   "integrity" "sha512-vmzWG/L5OXoNruMV6u2l2IaheI091e+t+fFCOR9sl46EE3epkSRIwGCmIP/EYDtPsFBIG7e6exttC9/GlfmxEQ=="
   "resolved" "https://registry.npmjs.org/truffle-flattener/-/truffle-flattener-1.5.0.tgz"
   "version" "1.5.0"

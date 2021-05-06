@@ -28,6 +28,8 @@ truffle exec scripts/script.js => launch scripts
 Config metamask : 
 rajouter le reseau Ganache (defaut : HTTP://127.0.0.1:7545  id: 1337)
 
+Creer un flat pour le verify -> truffle-flattener RisiToken.sol --output RisiTokenFlat.sol 
+ensuite go remix et regler les bugs (virer les SPDX et le Context.sol abstract)
 Ajouter un nouveau compte
 En cliquant sur l'avatar du compte dans metamask -> Importer un compte -> copié collé la clefs privée de la seconde ligne ganache
 ## local deploy

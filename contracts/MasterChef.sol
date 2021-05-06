@@ -5,7 +5,6 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./libs/IBEP20.sol";
 import "./libs/SafeBEP20.sol";
-import "./libs/IRisiReferral.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
@@ -16,8 +15,6 @@ import "./RisiToken.sol";
 // Note that it's ownable and the owner wields tremendous power. The ownership
 // will be transferred to a governance smart contract once RISI is sufficiently
 // distributed and the community can show to govern itself.
-//
-// Have fun reading it. Hopefully it's bug-free. God bless.
 contract MasterChef is Ownable, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeBEP20 for IBEP20;
@@ -75,18 +72,10 @@ contract MasterChef is Ownable, ReentrancyGuard {
     // Total locked up rewards
     uint256 public totalLockedUpRewards;
 
-    // Risi referral contract address.
-    IRisiReferral public risiReferral;
-    // Referral commission rate in basis points.
-    uint16 public referralCommissionRate = 100;
-    // Max referral commission rate: 10%.
-    uint16 public constant MAXIMUM_REFERRAL_COMMISSION_RATE = 1000;
-
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event EmergencyWithdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event EmissionRateUpdated(address indexed caller, uint256 previousAmount, uint256 newAmount);
-    event ReferralCommissionPaid(address indexed user, address indexed referrer, uint256 commissionAmount);
     event RewardLockedUp(address indexed user, uint256 indexed pid, uint256 amountLockedUp);
 
     constructor(
@@ -193,13 +182,10 @@ contract MasterChef is Ownable, ReentrancyGuard {
     }
 
     // Deposit LP tokens to MasterChef for RISI allocation.
-    function deposit(uint256 _pid, uint256 _amount, address _referrer) public nonReentrant {
+    function deposit(uint256 _pid, uint256 _amount) public nonReentrant {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
-        if (_amount > 0 && address(risiReferral) != address(0) && _referrer != address(0) && _referrer != msg.sender) {
-            risiReferral.recordReferral(msg.sender, _referrer);
-        }
         payOrLockupPendingRisi(_pid);
         if (_amount > 0) {
             pool.lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
@@ -268,7 +254,6 @@ contract MasterChef is Ownable, ReentrancyGuard {
 
                 // send rewards
                 safeRisiTransfer(msg.sender, totalRewards);
-                payReferralCommission(msg.sender, totalRewards);
             }
         } else if (pending > 0) {
             user.rewardLockedUp = user.rewardLockedUp.add(pending);
@@ -300,35 +285,10 @@ contract MasterChef is Ownable, ReentrancyGuard {
         feeAddress = _feeAddress;
     }
 
-    // Pancake has to add hidden dummy pools in order to alter the emission, here we make it simple and transparent to all.
+    // Risi has to add hidden dummy pools in order to alter the emission, here we make it simple and transparent to all.
     function updateEmissionRate(uint256 _risiPerBlock) public onlyOwner {
         massUpdatePools();
         emit EmissionRateUpdated(msg.sender, risiPerBlock, _risiPerBlock);
         risiPerBlock = _risiPerBlock;
-    }
-
-    // Update the risi referral contract address by the owner
-    function setRisiReferral(IRisiReferral _risiReferral) public onlyOwner {
-        risiReferral = _risiReferral;
-    }
-
-    // Update referral commission rate by the owner
-    function setReferralCommissionRate(uint16 _referralCommissionRate) public onlyOwner {
-        require(_referralCommissionRate <= MAXIMUM_REFERRAL_COMMISSION_RATE, "setReferralCommissionRate: invalid referral commission rate basis points");
-        referralCommissionRate = _referralCommissionRate;
-    }
-
-    // Pay referral commission to the referrer who referred this user.
-    function payReferralCommission(address _user, uint256 _pending) internal {
-        if (address(risiReferral) != address(0) && referralCommissionRate > 0) {
-            address referrer = risiReferral.getReferrer(_user);
-            uint256 commissionAmount = _pending.mul(referralCommissionRate).div(10000);
-
-            if (referrer != address(0) && commissionAmount > 0) {
-                risi.mint(referrer, commissionAmount);
-                risiReferral.recordReferralCommission(referrer, commissionAmount);
-                emit ReferralCommissionPaid(_user, referrer, commissionAmount);
-            }
-        }
     }
 }

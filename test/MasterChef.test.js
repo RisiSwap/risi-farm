@@ -3,18 +3,14 @@ const { assert } = require("chai");
 const RisiToken = artifacts.require('RisiToken');
 const MasterChef = artifacts.require('MasterChef');
 const MockBEP20 = artifacts.require('libs/MockBEP20');
-const RisiReferral = artifacts.require('RisiReferral');
 
-contract('MasterChef', ([alice, bob, carol, referrer, treasury, dev, fee, owner]) => {
+contract('MasterChef', ([alice, bob, carol, treasury, dev, fee, owner]) => {
     beforeEach(async () => {
         this.zeroAddress = '0x0000000000000000000000000000000000000000';
         this.risi = await RisiToken.new({ from: owner });
-        this.referral = await RisiReferral.new({ from: owner });
         this.chef = await MasterChef.new(this.risi.address, '100', '1000', { from: owner });
 
         await this.risi.transferOwnership(this.chef.address, { from: owner });
-        await this.referral.updateOperator(this.chef.address, true, { from: owner });
-        await this.chef.setRisiReferral(this.referral.address, { from: owner });
 
         this.lp1 = await MockBEP20.new('LPToken', 'LP1', '1000000', { from: owner });
         this.lp2 = await MockBEP20.new('LPToken', 'LP2', '1000000', { from: owner });
@@ -51,11 +47,9 @@ contract('MasterChef', ([alice, bob, carol, referrer, treasury, dev, fee, owner]
         await this.lp2.approve(this.chef.address, '1000', { from: alice });
 
         assert.equal((await this.lp1.balanceOf(fee)).toString(), '0');
-        await this.chef.deposit(0, '100', referrer, { from: alice });
-        assert.equal((await this.lp1.balanceOf(fee)).toString(), '4');
+        assert.equal((await this.lp1.balanceOf(fee)).toString(), '0');
 
         assert.equal((await this.lp2.balanceOf(fee)).toString(), '0');
-        await this.chef.deposit(1, '100', referrer, { from: alice });
         assert.equal((await this.lp2.balanceOf(fee)).toString(), '0');
     });
 

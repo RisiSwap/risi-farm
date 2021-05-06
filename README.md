@@ -38,6 +38,13 @@ Change operator of risiToken contract to MasterChef
 risi need to approve operator (masterchef)
 
 
+## Notes :
+
+TimeLock _admin : ??
+MasterChef owner : Timelock -> appeler les function owner via execute Transaction ? or queueTransaction ?  deposit with 0 amount is "claim"
+
+
+
 ## Deployed Contracts
 
 - RisiToken: [0x1f546ad641b56b86fd9dceac473d1c7a357276b7](https://bscscan.com/address/0x1f546ad641b56b86fd9dceac473d1c7a357276b7)
